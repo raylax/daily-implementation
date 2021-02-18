@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<a href="#a">A</a>
+<a href="#b">B</a>
+<a href="https://www.baidu.com">C</a>
+<script type="text/javascript">
+    function interceptClickEvent(e) {
+        const target = e.target
+        if (target.tagName !== 'A') {
+            return true
+        }
+        let href = target.getAttribute('href')
+        if (!href || inTrustList(href)) {
+            return true
+        }
+        e.preventDefault()
+        const b = confirm(`link to ${href} ?`);
+        if (b) {
+            open(href)
+        }
+        return false
+    }
+    function inTrustList(url) {
+        if (!url.startsWith('http')) {
+            return true
+        }
+        const u = new URL(url);
+        return u.host === location.host
+    }
+    document.addEventListener('click', interceptClickEvent)
+</script>
+</body>
+</html>
