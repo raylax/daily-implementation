@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style type="text/css">
+        #text {
+            text-align: center;
+            font-size: 8rem;
+            padding: 1rem;
+        }
+    </style>
+</head>
+<body>
+<p id="text"></p>
+<script type="text/javascript">
+    (function () {
+        const TAB = [
+            0xd83cdf11,
+            0xd83cdf12,
+            0xd83cdf13,
+            0xd83cdf14,
+            0xd83cdf15,
+            0xd83cdf16,
+            0xd83cdf17,
+            0xd83cdf18
+        ]
+        const el = document.getElementById('text');
+        const loading = (i = 0) => {
+            const e = TAB[i & TAB.length - 1]
+            el.innerText = String.fromCharCode(e >> 16, e & 0xffff)
+            setTimeout(() => loading(i + 1), 300)
+        }
+        loading()
+    })()
+</script>
+</body>
+</html>
