@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Context Menu</title>
+    <style type="text/css">
+        #xxx {
+            padding: 40px 30px 20px 10px;
+            width: 1000px;
+            height: 600px;
+            border: 1px solid #f00;
+            position: fixed;
+            margin: 80px 20px 30px 140px;
+        }
+        .cm-wrapper {
+            list-style: none;
+            margin-block: 0;
+            padding-inline: 0;
+            width: 120px;
+            padding: 6px;
+            border-radius: 3px;
+            color: #333;
+            position: fixed;
+            border: 1px solid #f00;
+        }
+        .cm-wrapper li {
+            position: relative;
+            padding: 3px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .cm-wrapper li:hover {
+            background-color: #69c;
+            color: #fff;
+        }
+
+        .dbg-left::before, .dbg-left::after, .dbg-top::before, .dbg-top::after {
+            content: '>';
+            display: inline-block;
+            color: #f00;
+            position: absolute;
+            font-size: 10px;
+        }
+        .dbg-left::before {
+            left: 0;
+            top: -6px;
+            transform: rotateZ(180deg);
+        }
+        .dbg-left::after {
+            right: -1px;
+            top: -9px;
+        }
+        .dbg-top::before {
+            top: -4px;
+            left: -4px;
+            transform: rotateZ(-90deg);
+        }
+        .dbg-top::after {
+            bottom: -4px;
+            left: -2px;
+            transform: rotateZ(90deg);
+        }
+    </style>
+</head>
+<body>
+<div id="xxx"></div>
+<script type="text/javascript">
+    function ContentMenu(parent) {
+        this.menus = []
+        const add = (name, handler) => {
+            this.menus.push({
+                name,
+                handler,
+            })
+        }
+        const removeWrapper = () => {
+            if (this.wrapper) {
+                document.body.removeChild(this.wrapper)
+                this.wrapper = null
+            }
+            if (this.debug) {
+                this.debug()
+                this.debug = null
+            }
+        }
+        const createWrapper = () => {
+            const wrapper = document.createElement('ul')
+            wrapper.id = 'cm-' + new Date().getTime()
+            wrapper.className = 'cm-wrapper'
+            wrapper.style.opacity = '0'
+            for (let { name, handler } of this.menus) {
+                let menu = document.createElement('li');
+                menu.addEventListener('click', () => {
+                    removeWrapper()
+                    handler.call(this.menus)
+                }, false)
+                menu.innerText = name
+                wrapper.appendChild(menu)
+            }
+            return wrapper
+        }
+        const eventHandler = (event) => {
+            event.preventDefault()
+            let { clientX, clientY, offsetX, offsetY } = event
+            const wrapper = createWrapper()
+            wrapper.style.left = clientX + 'px'
+            wrapper.style.top = clientY + 'px'
+            removeWrapper()
+            document.body.appendChild(wrapper)
+            this.wrapper = wrapper
+            // adjust
+            if (offsetX + wrapper.offsetWidth > parent.offsetWidth) {
+                wrapper.style.left = (clientX - wrapper.offsetWidth) + 'px'
+                offsetX -= wrapper.offsetWidth
+            }
+            if (offsetY + wrapper.offsetHeight > parent.offsetHeight) {
+                wrapper.style.top = (clientY - wrapper.offsetHeight) + 'px'
+                offsetY -= wrapper.offsetHeight
+            }
+            wrapper.style.opacity = '1'
+            this.debug = new DebuggerEl(wrapper, offsetY, offsetX)
+
+        }
+        parent.oncontextmenu = eventHandler
+        parent.addEventListener('click', function (event) {
+            event.preventDefault()
+            if (event.ctrlKey) {
+                eventHandler(event)
+            } else {
+                removeWrapper()
+            }
+        }, false)
+        return {
+            add,
+            hide: removeWrapper
+        }
+    }
+
+    const xxx = document.getElementById('xxx')
+    function DebuggerEl(el, top, left) {
+        let { offsetLeft, offsetTop, offsetWidth, offsetHeight } = el
+        top = top || offsetTop
+        left = left || offsetLeft
+        const leftEl = createLeft(left, top, offsetHeight)
+        const topEl = createTop(top, left, offsetWidth)
+        function createTop(top, left, width) {
+            let el = document.createElement('div')
+            let text = document.createElement('span')
+            text.style.fontSize = '12px'
+            text.style.paddingLeft = '5px'
+            text.style.display = 'inline-block'
+            text.innerText = top + 'px'
+            el.appendChild(text)
+            el.className = 'dbg-top'
+            let style = el.style;
+            style.width = '1px'
+            style.height = top + 'px'
+            style.backgroundColor = '#f00'
+            style.position = 'fixed'
+            style.left = offsetLeft + (width / 2) + 'px'
+            style.top = (offsetTop - top) + 'px'
+            style.textAlign = 'center'
+            text.style.transform = 'translateY(' + (top / 2 - 12) + 'px)'
+            document.body.appendChild(el)
+            return el
+        }
+        function createLeft(left, top, height) {
+            let el = document.createElement('div')
+            let text = document.createElement('span')
+            text.style.fontSize = '12px'
+            text.innerText = left + 'px'
+            el.appendChild(text)
+            el.className = 'dbg-left'
+            let style = el.style;
+            style.width = left + 'px'
+            style.height = '1px'
+            style.backgroundColor = '#f00'
+            style.position = 'fixed'
+            style.left = (offsetLeft - left) + 'px'
+            style.top = offsetTop + (height / 2) + 'px'
+            style.textAlign = 'center'
+            document.body.appendChild(el)
+            return el
+        }
+        return function () {
+            document.body.removeChild(leftEl)
+            document.body.removeChild(topEl)
+        }
+    }
+    new DebuggerEl(xxx)
+    const cm = new ContentMenu(xxx)
+    cm.add('create', () => alert('create'))
+    cm.add('update', () => alert('update'))
+    cm.add('delete', () => alert('delete'))
+</script>
+</body>
+</html>
