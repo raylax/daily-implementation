@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+
+<script type="text/javascript">
+    const NODE_ATTRIBUTES = {
+        'text': 'innerText',
+        'html': 'innerHtml',
+    }
+
+
+    const createProxy = (node, obj) => {
+        const getAttribute = key => NODE_ATTRIBUTES[key]
+        for (let k of Object.keys(obj)) {
+            const attr = getAttribute(k);
+            if (attr) {
+                node[attr] = obj[k]
+            }
+        }
+        obj._node = node
+        return new Proxy(obj, {
+            get: (target, key) => {
+                return target[key]
+            },
+            set: (target, key, value) => {
+                const attr = getAttribute(key)
+                if (attr && value !== target[key]) {
+                    target._node[attr] = value
+                }
+                target[key] = value
+                return true
+            },
+            deleteProperty: (target, key) => {
+                const attr = getAttribute(key)
+                if (attr) {
+                    target._node[attr] = null
+                }
+                delete target[key]
+                return true
+            },
+            defineProperty: (target, key, { value }) => {
+                const attr = getAttribute(key)
+                if (attr) {
+                    target._node[attr] = value
+                }
+                target[key] = value
+                return true
+            }
+        })
+    }
+
+    let node = document.createElement('p');
+    document.body.appendChild(node)
+    const vm = createProxy(node, { text: 'p text' })
+
+    setInterval(() => {
+        vm.text = new Date().toLocaleString()
+    }, 100)
+
+</script>
+</body>
+</html>
