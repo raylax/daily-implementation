@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        table {
+            border-collapse: collapse;
+        }
+        td {
+            width: 10px;
+            height: 10px;
+            border: none;
+        }
+        #log {
+            padding: 5px;
+            font-family: sans-serif;
+            font-size: 10px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<p id="log">
+    <input id="delta" type="range" value="8" min="2" max="16" step="1"/>
+    <label for="delta" id="deltaLabel">DELTA:8</label>
+    <br/>
+    <input id="gray" type="checkbox">
+    <label for="gray">GRAY</label>
+    <br/>
+    <span id="text"></span>
+</p>
+
+</body>
+<script type="text/javascript">
+    (async function (){
+        let gray = false
+        let delta = 8
+        function loadImage(src) {
+            return new Promise(resolve => {
+                let image = new Image()
+                image.src = src
+                image.onload = function () {
+                    resolve(image)
+                }
+            })
+        }
+        async function renderImage() {
+            let img = await loadImage('A.jpg')
+            let canvas = document.createElement("canvas")
+            let w = img.width
+            let h = img.height
+            console.log('w', w, 'h', h)
+            canvas.width = w
+            canvas.height = h
+            let ctx = canvas.getContext("2d")
+            ctx.drawImage(img, 0, 0)
+            let { data } = ctx.getImageData(0, 0, w, h)
+            let n = 0
+            let m = []
+            for (let i = 0; i < h; i++) {
+                let row = []
+                for (let j = 0; j < w; j++) {
+                    row.push([data[n++], data[n++], data[n++], data[n++]])
+                }
+                m.push(row)
+            }
+            return [w, h, m]
+        }
+        async function readerElement(w, h, m) {
+            let log = document.getElementById('text');
+            log.innerText = '渲染中...'
+            let startTs = new Date().getTime()
+            const deltaM = delta * delta
+            let nw = Math.floor(w / delta)
+            let nh = Math.floor(h / delta)
+            console.log('nw', nw, 'nh', nh)
+            let nm = []
+            for (let i = 0; i < nh; i++) {
+                let row = []
+                for (let j = 0; j < nw; j++) {
+                    let [bx, by] = [j * delta, i * delta]
+                    let [r, g, b, a] = [0, 0, 0, 0]
+                    for (let x = 0; x < delta; x++) {
+                        for (let y = 0; y < delta; y++) {
+                            let t = m[by + y][bx + x]
+                            r += t[0]
+                            g += t[1]
+                            b += t[2]
+                            a += t[3]
+                        }
+                    }
+                    row.push([r / deltaM, g / deltaM, b / deltaM, a / deltaM])
+                }
+                nm.push(row)
+            }
+            let wrapper = document.getElementById('wrapper')
+            if (wrapper) {
+                document.body.removeChild(wrapper)
+            }
+            wrapper = document.createElement('table')
+            wrapper.id = 'wrapper'
+            for (let cells of nm) {
+                let row = document.createElement('tr')
+                for (let cell of cells) {
+                    let [r, g, b, a] = cell
+                    if (gray) {
+                        a = 0xff
+                        r = g = b = (r * 19595 + g * 38869 + b * 7872) >> 16
+                    }
+                    let col = document.createElement('td')
+                    col.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${a})`
+                    row.appendChild(col)
+                }
+                wrapper.appendChild(row)
+            }
+            document.body.appendChild(wrapper)
+            log.innerText = `耗时:${new Date().getTime() - startTs}ms`
+        }
+        let [w, h, m] = await renderImage()
+        await readerElement(w, h, m, 8)
+        document.getElementById('delta').addEventListener('change', async ({ target }) => {
+            delta = target.value
+            document.getElementById('deltaLabel').innerText = `DELTA:${delta}`
+            await readerElement(w, h, m)
+        })
+        document.getElementById('gray').addEventListener('click', async ({ target }) => {
+            gray = target.checked
+            await readerElement(w, h, m)
+        })
+    })()
+</script>
+</html>
