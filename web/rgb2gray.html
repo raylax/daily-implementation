@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        table {
+            border-collapse: collapse;
+        }
+        td {
+            width: 8px;
+            height: 8px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+</body>
+<script type="text/javascript">
+    (async function (){
+        function loadImage(src) {
+            return new Promise(resolve => {
+                let image = new Image()
+                image.src = src
+                image.onload = function () {
+                    resolve(image)
+                }
+            })
+        }
+        let img = await loadImage('A.jpg')
+        let canvas = document.createElement("canvas")
+        let w = img.width
+        let h = img.height
+        canvas.width = w
+        canvas.height = h
+        let ctx = canvas.getContext("2d")
+        ctx.drawImage(img, 0, 0)
+        let { data } = ctx.getImageData(0, 0, w, h)
+        let n = 0
+        console.log('w', w, 'h', h)
+        console.time('render')
+        let m = []
+        for (let i = 0; i < h; i++) {
+            let row = []
+            for (let j = 0; j < w; j++) {
+                row.push([data[n++], data[n++], data[n++], data[n++]])
+            }
+            m.push(row)
+        }
+        // 缩放
+        const delta = 16
+        const deltaM = delta * delta
+        let nw = Math.floor(w / delta)
+        let nh = Math.floor(h / delta)
+        let nm = []
+        for (let i = 0; i < nh; i++) {
+            let row = []
+            for (let j = 0; j < nw; j++) {
+                let [bx, by] = [j * delta, i * delta]
+                let [r, g, b, a] = [0, 0, 0, 0]
+                for (let x = 0; x < delta; x++) {
+                    for (let y = 0; y < delta; y++) {
+                        let t = m[by + y][bx + x]
+                        r += t[0]
+                        g += t[1]
+                        b += t[2]
+                        a += t[3]
+                    }
+                }
+                row.push([r / deltaM, g / deltaM, b / deltaM, a / deltaM])
+            }
+            nm.push(row)
+        }
+        let wrapper = document.createElement('table')
+        for (let cells of nm) {
+            let row = document.createElement('tr')
+            for (let cell of cells) {
+                let [r, g, b, a] = cell
+                let col = document.createElement('td')
+                col.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${a})`
+                row.appendChild(col)
+            }
+            wrapper.appendChild(row)
+        }
+        document.body.appendChild(wrapper)
+        console.timeEnd('render')
+    })()
+</script>
+</html>
