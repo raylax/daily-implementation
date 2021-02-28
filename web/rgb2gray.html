@@ -8,14 +8,6 @@
             margin: 0;
             padding: 0;
         }
-        table {
-            border-collapse: collapse;
-        }
-        td {
-            width: 10px;
-            height: 10px;
-            border: none;
-        }
         #log {
             padding: 5px;
             font-family: sans-serif;
@@ -102,21 +94,31 @@
             if (wrapper) {
                 document.body.removeChild(wrapper)
             }
-            wrapper = document.createElement('table')
+            wrapper = document.createElementNS("http://www.w3.org/2000/svg", "svg")
             wrapper.id = 'wrapper'
+
+            let [rw, rh] = [6, 6]
+            wrapper.setAttribute('width', `${nw * rw}`)
+            wrapper.setAttribute('height', `${nh * rh}`)
+            let x = 0;
+            let y = 0;
             for (let cells of nm) {
-                let row = document.createElement('tr')
                 for (let cell of cells) {
                     let [r, g, b, a] = cell
                     if (gray) {
                         a = 0xff
                         r = g = b = (r * 19595 + g * 38869 + b * 7872) >> 16
                     }
-                    let col = document.createElement('td')
-                    col.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${a})`
-                    row.appendChild(col)
+                    let c = document.createElementNS("http://www.w3.org/2000/svg", "rect")
+                    c.setAttribute('fill', `rgba(${r}, ${g}, ${b}, ${a})`)
+                    c.setAttribute('x', `${x++ * rw}`)
+                    c.setAttribute('y', `${y * rh}`)
+                    c.setAttribute('width', `${rw}`)
+                    c.setAttribute('height', `${rh}`)
+                    wrapper.appendChild(c)
                 }
-                wrapper.appendChild(row)
+                x = 0
+                y++
             }
             document.body.appendChild(wrapper)
             log.innerText = `耗时:${new Date().getTime() - startTs}ms`
