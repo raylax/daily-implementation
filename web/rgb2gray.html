@@ -18,20 +18,22 @@
 </head>
 <body>
 <p id="log">
-    <input id="delta" type="range" value="8" min="2" max="16" step="1"/>
+    <input id="delta" type="range" value="8" min="1" max="16" step="1"/>
     <label for="delta" id="deltaLabel">DELTA:8</label>
+    <button id="open">open</button>
     <br/>
     <input id="gray" type="checkbox">
     <label for="gray">GRAY</label>
     <br/>
     <span id="text"></span>
+    <br/>
 </p>
 
 </body>
 <script type="text/javascript">
     (async function (){
         let gray = false
-        let delta = 8
+        let delta = 4
         function loadImage(src) {
             return new Promise(resolve => {
                 let image = new Image()
@@ -91,15 +93,16 @@
                 nm.push(row)
             }
             let wrapper = document.getElementById('wrapper')
-            if (wrapper) {
-                document.body.removeChild(wrapper)
+            if (!wrapper) {
+                wrapper = document.createElement('canvas')
+                wrapper.id = 'wrapper'
+                document.body.appendChild(wrapper)
             }
-            wrapper = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-            wrapper.id = 'wrapper'
-
             let [rw, rh] = [6, 6]
             wrapper.setAttribute('width', `${nw * rw}`)
             wrapper.setAttribute('height', `${nh * rh}`)
+            let ctx = wrapper.getContext('2d')
+            ctx.clearRect(0, 0, nw * rw, nh * rh)
             let x = 0;
             let y = 0;
             for (let cells of nm) {
@@ -109,18 +112,12 @@
                         a = 0xff
                         r = g = b = (r * 19595 + g * 38869 + b * 7872) >> 16
                     }
-                    let c = document.createElementNS("http://www.w3.org/2000/svg", "rect")
-                    c.setAttribute('fill', `rgba(${r}, ${g}, ${b}, ${a})`)
-                    c.setAttribute('x', `${x++ * rw}`)
-                    c.setAttribute('y', `${y * rh}`)
-                    c.setAttribute('width', `${rw}`)
-                    c.setAttribute('height', `${rh}`)
-                    wrapper.appendChild(c)
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`
+                    ctx.fillRect(x++ * rw, y * rh, rw, rh)
                 }
                 x = 0
                 y++
             }
-            document.body.appendChild(wrapper)
             log.innerText = `耗时:${new Date().getTime() - startTs}ms`
         }
         let [w, h, m] = await renderImage()
@@ -133,6 +130,15 @@
         document.getElementById('gray').addEventListener('click', async ({ target }) => {
             gray = target.checked
             await readerElement(w, h, m)
+        })
+        document.getElementById('open').addEventListener('click', () => {
+            let wrapper = document.getElementById('wrapper')
+            wrapper.toBlob(function (blob) {
+                let url = URL.createObjectURL(blob)
+                open(url)
+                URL.revokeObjectURL(url)
+            })
+
         })
     })()
 </script>
