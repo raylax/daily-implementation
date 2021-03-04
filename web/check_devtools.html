@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<pre id="message"></pre>
+
+<script type="text/javascript">
+    let devtools
+    let el = new Image()
+    el.__defineGetter__('id', () => devtools = true)
+    setInterval(() => {
+        devtools = false
+        console.log(el)
+        document.getElementById('message').innerHTML = 'status = ' + devtools
+    }, 500)
+</script>
+</body>
+</html>
