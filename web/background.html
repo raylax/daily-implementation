@@ -63,7 +63,7 @@
                     y: Math.random() * this.h,
                     xo: Math.random() * 2 - 1,
                     yo: Math.random() * 2 - 1,
-                    max: 100, // 连线半径
+                    r: 100, // 连线半径
                 }));
             }
             bindEvent = () => {
@@ -71,7 +71,7 @@
                 el.addEventListener('mousemove', (e) => this.mouse = {
                     x: e.clientX - el.offsetLeft,
                     y: e.clientY - el.offsetTop,
-                    max: 200, // 捕获半径
+                    r: 200, // 捕获半径
                 }, false)
                 el.addEventListener('mouseleave', () => this.mouse = null, false)
             }
@@ -80,6 +80,7 @@
                 const { w, h, ctx, points, mouse, config } = this
                 const { pointColor, pointW, speedUp, lineColor } = config
                 const pointOffset = pointW / 2
+                const allPoints = [...points, mouse];
                 ctx.clearRect(0, 0, w, h)
                 for (let i = 0; i < points.length; i++) {
                     let p = points[i]
@@ -95,17 +96,17 @@
                     ctx.fillStyle = `rgba(${pointColor}, 1)`
                     ctx.fillRect(x - pointOffset, y - pointOffset, pointW, pointW)
                     // 画线
-                    for (const c of [...points, mouse]) {
+                    for (const c of allPoints) {
                         if (!c) continue
                         let [ xd, yd ] = [ x - c.x, y - c.y ]
                         let d = abs(sqrt(pow(c.x - x, 2) + pow(c.y - y, 2)))
-                        if (d > c.max) continue
+                        if (d > c.r) continue
                         // 靠近鼠标加速
-                        if (c === mouse && d >= c.max / 2) {
+                        if (c === mouse && d >= c.r / 2) {
                             p.x -= speedUp * xd
                             p.y -= speedUp * yd
                         }
-                        let o = (c.max - d) / c.max
+                        let o = (c.r - d) / c.r
                         ctx.beginPath()
                         ctx.lineWidth = o
                         ctx.strokeStyle = `rgba(${lineColor}, ${o * .5})`
