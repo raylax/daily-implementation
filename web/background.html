@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+</body>
+<script>
+
+    (function () {
+        class Background {
+            el = document.body
+            config = {
+                pointW: 1, // 点宽度
+                lineColor: '0,0,0', // 线颜色
+                pointColor: '0,0,0', // 点颜色
+                pointCount: 99, // 点数量
+                speedUp: 0.03, // 加速度
+            }
+            style = {
+                display: 'block',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                height: '100%',
+                width: '100%',
+                opacity: 1,
+            }
+            init = () => {
+                this.w = this.el.clientWidth
+                this.h = this.el.clientHeight
+                this.points = this.randomPoints()
+                this.initialCanvas()
+                this.bindEvent()
+                this.render()
+            }
+            createCssText() {
+                return Object.keys(this.style).map(k => `${k}: ${this.style[k]}`).join("; ")
+            }
+            initialCanvas = () => {
+                let canvas = document.createElement('canvas')
+                canvas.style.cssText = this.createCssText()
+                canvas.width = this.w
+                canvas.height = this.h
+                this.el.appendChild(canvas)
+                this.ctx = canvas.getContext('2d')
+            }
+            randomPoints = () => {
+                return new Array(this.config.pointCount).fill({}).map(() => ({
+                    x: Math.random() * this.w,
+                    y: Math.random() * this.h,
+                    xo: Math.random() * 2 - 1,
+                    yo: Math.random() * 2 - 1,
+                    max: 100, // 连线半径
+                }));
+            }
+            bindEvent = () => {
+                const { el } = this
+                el.addEventListener('mousemove', (e) => this.mouse = {
+                    x: e.clientX - el.offsetLeft,
+                    y: e.clientY - el.offsetTop,
+                    max: 200, // 捕获半径
+                }, false)
+                el.addEventListener('mouseleave', () => this.mouse = null, false)
+            }
+            render = () => {
+                const { pow, abs, sqrt } = Math
+                const { w, h, ctx, points, mouse, config } = this
+                const { pointColor, pointW, speedUp, lineColor } = config
+                const pointOffset = pointW / 2
+                ctx.clearRect(0, 0, w, h)
+                for (let i = 0; i < points.length; i++) {
+                    let p = points[i]
+                    let { xo, yo } = p
+                    p.x += p.xo
+                    p.y += p.yo
+                    // 判断下次是否到画布边缘
+                    let [ nx, ny ] = [ p.x + xo, p.y + yo ]
+                    if (nx - pointOffset <= 0 || nx + pointOffset >= w) p.xo = -p.xo
+                    if (ny - pointOffset <= 0 || ny + pointOffset >= h) p.yo = -p.yo
+                    let { x, y } = p
+                    // 画点
+                    ctx.fillStyle = `rgba(${pointColor}, 1)`
+                    ctx.fillRect(x - pointOffset, y - pointOffset, pointW, pointW)
+                    // 画线
+                    for (const c of [...points, mouse]) {
+                        if (!c) continue
+                        let [ xd, yd ] = [ x - c.x, y - c.y ]
+                        let d = abs(sqrt(pow(c.x - x, 2) + pow(c.y - y, 2)))
+                        if (d > c.max) continue
+                        // 靠近鼠标加速
+                        if (c === mouse && d >= c.max / 2) {
+                            p.x -= speedUp * xd
+                            p.y -= speedUp * yd
+                        }
+                        let o = (c.max - d) / c.max
+                        ctx.beginPath()
+                        ctx.lineWidth = o
+                        ctx.strokeStyle = `rgba(${lineColor}, ${o * .5})`
+                        ctx.moveTo(x, y)
+                        ctx.lineTo(c.x, c.y)
+                        ctx.stroke()
+                    }
+                }
+                requestAnimationFrame(() => this.render())
+            }
+
+        }
+        new Background().init()
+    })()
+
+
+</script>
+</html>
